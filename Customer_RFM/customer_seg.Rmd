@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Introduction
 
-In this document, I will reproduce the [Susan Li's blog artile on customer segmentation](https://towardsdatascience.com/find-your-best-customers-with-customer-segmentation-in-python-61d602f9eee6) in R. 
+In this document, I will reproduce a recent [blog article on customer segmentation](https://towardsdatascience.com/find-your-best-customers-with-customer-segmentation-in-python-61d602f9eee6) in R. 
 
 # Analysis
 
@@ -246,7 +246,7 @@ df_new %>% mutate(days_lastbuy=as.numeric(ref_date - InvoiceDate, units="days"))
 df_rfm
 ```
 
-### Quantile RFM
+### Quartile RFM
 
 ```{r quant-rfm, results="markdown", message=FALSE, warning=FALSE, echo=TRUE}
 df_rfm %>% 
@@ -269,13 +269,13 @@ df_rfm_qtl %>%
   top_n(10)
 ```
 
-Our top customer 14646 does not exist in Susan's analysis. Let's find out what has caused it.
+Our top customer 14646 does not exist in the original analysis. Let's find out what has caused it.
 
 ```{r rec, results="markdown", message=FALSE, warning=FALSE, echo=TRUE}
 df %>% filter(CustomerID == "14646")
 ```
 
-It turns out that this customer is in Netherland and her analysis only included customers in UK.
+It turns out that this customer is in Netherland and the original analysis only included customers in UK.
 
 # Conclusions
 

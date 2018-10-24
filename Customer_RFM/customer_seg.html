@@ -144,7 +144,7 @@ $(document).ready(function () {
 <li><a href="#reports">Reports</a><ul>
 <li><a href="#data-filtering">Data filtering</a></li>
 <li><a href="#rfm-table">RFM Table</a></li>
-<li><a href="#quantile-rfm">Quantile RFM</a></li>
+<li><a href="#quartile-rfm">Quartile RFM</a></li>
 </ul></li>
 </ul></li>
 <li><a href="#conclusions">Conclusions</a></li>
@@ -153,7 +153,7 @@ $(document).ready(function () {
 
 <div id="introduction" class="section level1">
 <h1>Introduction</h1>
-<p>In this document, I will reproduce the <a href="https://towardsdatascience.com/find-your-best-customers-with-customer-segmentation-in-python-61d602f9eee6">Susan Li’s blog artile on customer segmentation</a> in R.</p>
+<p>In this document, I will reproduce a recent <a href="https://towardsdatascience.com/find-your-best-customers-with-customer-segmentation-in-python-61d602f9eee6">blog article on customer segmentation</a> in R.</p>
 </div>
 <div id="analysis" class="section level1">
 <h1>Analysis</h1>
@@ -384,8 +384,8 @@ df_rfm</code></pre>
 ## 10      12346 United Kingdom     326         1         77184.
 ## # ... with 4,337 more rows</code></pre>
 </div>
-<div id="quantile-rfm" class="section level3">
-<h3>Quantile RFM</h3>
+<div id="quartile-rfm" class="section level3">
+<h3>Quartile RFM</h3>
 <pre class="r"><code>df_rfm %&gt;% 
   mutate(r_quartile=ntile(desc(recency),4),
          f_quartile=ntile(desc(frequency),4),
@@ -430,7 +430,7 @@ df_rfm_qtl</code></pre>
 ## 10      13694 United…     374       568         65040.          1
 ## # ... with 418 more rows, and 3 more variables: f_quartile &lt;int&gt;,
 ## #   m_quartile &lt;int&gt;, rfm_score &lt;chr&gt;</code></pre>
-<p>Our top customer 14646 does not exist in Susan’s analysis. Let’s find out what has caused it.</p>
+<p>Our top customer 14646 does not exist in the original analysis. Let’s find out what has caused it.</p>
 <pre class="r"><code>df %&gt;% filter(CustomerID == &quot;14646&quot;)</code></pre>
 <pre><code>## # A tibble: 2,085 x 8
 ##    InvoiceNo StockCode Description Quantity InvoiceDate         UnitPrice
@@ -447,7 +447,7 @@ df_rfm_qtl</code></pre>
 ## 10 539491    21123     SET/10 IVO…        2 2010-12-20 10:09:00     1.25 
 ## # ... with 2,075 more rows, and 2 more variables: CustomerID &lt;dbl&gt;,
 ## #   Country &lt;chr&gt;</code></pre>
-<p>It turns out that this customer is in Netherland and her analysis only included customers in UK.</p>
+<p>It turns out that this customer is in Netherland and the original analysis only included customers in UK.</p>
 </div>
 </div>
 </div>
