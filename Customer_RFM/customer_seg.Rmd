@@ -1,0 +1,283 @@
+---
+title: "Customer RFM Segmentation with R"
+author: "Wei Xie"
+date: "10/23/2018"
+output: 
+  html_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+In this document, I will reproduce the [Susan Li's blog artile on customer segmentation](https://towardsdatascience.com/find-your-best-customers-with-customer-segmentation-in-python-61d602f9eee6) in R. 
+
+# Analysis
+
+## Libraries and Data File
+```{r load, results="markdown", message=FALSE, warning=FALSE, echo=FALSE}
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(readxl)
+library(gridExtra)
+```
+
+We can download the data file from the [UCI Archive](http://archive.ics.uci.edu/ml/datasets/online+retail).
+
+
+```{r load_df, results="markdown", message=FALSE, warning=FALSE, echo=TRUE}
+df <- read_excel("Online Retail.xlsx")
+```
+
+## Exploratory
+
+### Data Summary
+
+Let's first take a glimpse of the data file.
+
+```{r data, results="markdown", message=FALSE, warning=FALSE, echo=TRUE}
+glimpse(df)
+```
+
+### Missing Data
+
+Let's check if any of the columns have NA's and the percentage if yes.
+
+```{r data1, results="markdown", message=FALSE, warning=FALSE, echo=TRUE}
+df %>% summarize_all(funs(sum(ifelse(is.na(.),1,0)/n()*100))) %>%
+  gather() %>%
+  ggplot(aes(x=reorder(key,value), y=value)) +
+  geom_bar(stat="identity",fill="steelblue") +
+  labs(x="Variable", y="Missing (%)") +
+  coord_flip() +
+  ggtitle("Missing Percentage of Input Data File")
+  
+```
+
+About 25% of customerID is missing while a minor fraction of the Description is missing.
+
+
+### Transacton Time Period
+
+```{r period, results="markdown", message=FALSE, warning=FALSE, echo=TRUE}
+df %>% 
+  mutate(InvoiceDate=make_date(year(InvoiceDate),month(InvoiceDate), day(InvoiceDate))) %>%
+  group_by(InvoiceDate) %>%
+  summarize(n = n(),
+            sales_vol = sum(Quantity),
+            sales= sum(UnitPrice * Quantity)) %>%
+  ungroup() %>%
+  ggplot(aes(x=InvoiceDate, y=sales_vol)) +
+  geom_line(color="steelblue") +
+  labs(x="Invoice Date", y="Sales Vol (#)") +
+  ggtitle("Sales Vol (#)") -> p1
+
+df %>% 
+  mutate(InvoiceDate=make_date(year(InvoiceDate),month(InvoiceDate), day(InvoiceDate))) %>%  
+  group_by(InvoiceDate) %>%
+  summarize(n = n(),
+            sales_vol = sum(Quantity),
+            sales= sum(UnitPrice * Quantity)) %>%
+  ungroup() %>%
+  ggplot(aes(x=InvoiceDate, y=sales)) +
+  geom_line(color="steelblue") +
+  labs(x="Invoice Date", y="Sales ($)") +
+  ggtitle("Sales ($)") -> p2
+
+grid.arrange(p1,p2,ncol=2)
+
+```
+
+We can see the sales Vol (#) gas a negative value in June 2011. Meanwhile, we see both the sales vol (#) and sales ($) are quite volatile.
+
+### Stock Category
+
+```{r stock, results="markdown", message=FALSE, warning=FALSE, echo=TRUE}
+div <- 1000
+
+df %>% 
+  mutate(StockCode = as.factor(StockCode) %>% fct_lump(prop=0.003)) %>%
+  group_by(StockCode) %>%
+  summarize(sales_vol = sum(Quantity),
+            sales = sum(UnitPrice * Quantity)) %>%
+  ungroup() %>%
+  ggplot(aes(x=reorder(StockCode, -sales_vol), y=sales_vol/div)) +
+  geom_bar(stat="identity", fill="steelblue") +
+  labs(x="StockCode", y="Sales Vol (1K #)") +
+  coord_flip() +
+  scale_y_continuous() +
+  ggtitle("Sales Vol (1K #)") -> p1
+
+df %>% 
+  mutate(StockCode = as.factor(StockCode) %>% fct_lump(prop=0.003)) %>%
+  group_by(StockCode) %>%
+  summarize(sales_vol = sum(Quantity),
+            sales = sum(UnitPrice * Quantity)) %>%
+  ungroup() %>%
+  ggplot(aes(x=reorder(StockCode, -sales), y=sales/div)) +
+  geom_bar(stat="identity", fill="steelblue") +
+  labs(x="StockCode", y="Sales (1K $)") +
+  coord_flip() +
+  scale_y_continuous() +
+  ggtitle("Sales (1K $)") -> p2
+
+grid.arrange(p1,p2,ncol=2)
+```
+
+We can see the sales consists of many inventories, each of which only accounts for a very small fraction of the total.
+
+
+### Customer summary
+
+```{r cust, results="markdown", message=FALSE, warning=FALSE, echo=TRUE}
+div <- 1000
+
+df %>% 
+  mutate(CustomerID=as.factor(CustomerID) %>% fct_lump(prop=0.01)) %>%
+  group_by(CustomerID) %>%
+  summarize(sales_vol=sum(Quantity),
+            sales=sum(UnitPrice * Quantity)) %>%
+  ungroup() %>%
+  ggplot(aes(x=reorder(CustomerID,-sales_vol),  y=sales_vol/div)) +
+  geom_bar(stat="identity",fill="steelblue") +
+  labs(x="Customer ID", y="Sales Vol (1K #)") +
+  coord_flip() +
+  ggtitle("Sales Vol (1K #)") -> p1
+
+df %>% 
+  mutate(CustomerID=as.factor(CustomerID) %>% fct_lump(prop=0.01)) %>%
+  group_by(CustomerID) %>%
+  summarize(sales_vol=sum(Quantity),
+            sales=sum(UnitPrice * Quantity)) %>%
+  ungroup() %>%
+  ggplot(aes(x=reorder(CustomerID,-sales),  y=sales/div)) +
+  geom_bar(stat="identity",fill="steelblue") +
+  labs(x="Customer ID", y="Sales (1K $)") +
+  coord_flip() +
+  ggtitle("Sales (1K $)") -> p2
+
+grid.arrange(p1,p2,ncol=2)
+```
+
+Again, we see no dominant customers and a significant portion of customers with missing identification.
+
+### Country Summary
+
+
+```{r country, results="markdown", message=FALSE, warning=FALSE, echo=TRUE}
+div <- 1000
+
+df %>% 
+  mutate(Country=as.factor(Country) %>% fct_lump(prop=0.01)) %>%
+  group_by(Country) %>%
+  summarize(sales_vol=sum(Quantity),
+            sales=sum(UnitPrice * Quantity)) %>%
+  ungroup() %>%
+  ggplot(aes(x=reorder(Country,-sales_vol),  y=sales_vol/div)) +
+  geom_bar(stat="identity",fill="steelblue") +
+  labs(x="Country", y="Sales Vol (1K #)") +
+  coord_flip() +
+  ggtitle("Sales Vol (1K #)") -> p1
+
+df %>% 
+  mutate(Country=as.factor(Country) %>% fct_lump(prop=0.01)) %>%
+  group_by(Country) %>%
+  summarize(sales_vol=sum(Quantity),
+            sales=sum(UnitPrice * Quantity)) %>%
+  ungroup() %>%
+  ggplot(aes(x=reorder(Country,-sales),  y=sales/div)) +
+  geom_bar(stat="identity",fill="steelblue") +
+  labs(x="Country", y="Sales (1K $)") +
+  coord_flip() +
+  ggtitle("Sales (1K $)") -> p2
+
+grid.arrange(p1,p2,ncol=2)
+```
+
+We can see most of the sales occur in UK. 
+
+## Reports
+
+### Data filtering
+
+Since we are producing a customer value segmentation, we will 
+
+1. remove all records with missing CustomerID.
+2. remove negative quantity.
+
+```{r prep, results="markdown", message=FALSE, warning=FALSE, echo=TRUE}
+df %>% filter(! is.na(CustomerID)) %>%
+  filter(Quantity >= 0) -> df_new
+
+glimpse(df_new)
+```
+
+The new data set has about 400K records.
+
+### RFM Table
+
+To calculate recency, we need to convert datetime of InvoiceDate to date. 
+
+```{r rfm, results="markdown", message=FALSE, warning=FALSE, echo=TRUE}
+df_new %>% mutate(InvoiceDate = make_date(year(InvoiceDate), month(InvoiceDate), day(InvoiceDate))) -> df_new
+
+df_new %>% summarize(min_InvoiceDate=min(InvoiceDate),
+                     max_InvoiceDate=max(InvoiceDate))
+
+```
+
+We see the transactions are between 12/1/2010 and 12/9/2011. Therefore, we can use 12/10/2011 as the reference date to calculate recency.
+
+```{r rfm2, results="markdown", message=FALSE, warning=FALSE, echo=TRUE}
+ref_date <- ymd("2011-12-10")
+
+df_new %>% mutate(days_lastbuy=as.numeric(ref_date - InvoiceDate, units="days")) %>%
+  group_by(CustomerID, Country) %>%
+  summarize(recency=max(days_lastbuy),
+            frequency=n(),
+            monetary_value=sum(Quantity * UnitPrice)) %>%
+  ungroup() %>%
+  arrange(desc(monetary_value), recency, desc(frequency)) -> df_rfm
+
+df_rfm
+```
+
+### Quantile RFM
+
+```{r quant-rfm, results="markdown", message=FALSE, warning=FALSE, echo=TRUE}
+df_rfm %>% 
+  mutate(r_quartile=ntile(desc(recency),4),
+         f_quartile=ntile(desc(frequency),4),
+         m_quartile=ntile(desc(monetary_value),4),
+         rfm_score=paste(r_quartile,
+                         f_quartile,
+                         m_quartile, sep="")) -> df_rfm_qtl
+
+df_rfm_qtl
+```
+
+We can find our top 10 customer as 
+
+```{r top10, results="markdown",message=FALSE, warning=FALSE, echo=TRUE}
+df_rfm_qtl %>% 
+  filter(rfm_score=="111") %>%
+  arrange(desc(monetary_value)) %>%
+  top_n(10)
+```
+
+Our top customer 14646 does not exist in Susan's analysis. Let's find out what has caused it.
+
+```{r rec, results="markdown", message=FALSE, warning=FALSE, echo=TRUE}
+df %>% filter(CustomerID == "14646")
+```
+
+It turns out that this customer is in Netherland and her analysis only included customers in UK.
+
+# Conclusions
+
+In conclusions, we have successfully conduct RFM analysis and it confirms the conclusions of the previous analysis. In addition, we also show that although UK customers contribute to the most sales, some non-UK customers actually are top contributors as well. Therefore, we may want to include them in the future analysis.
+
