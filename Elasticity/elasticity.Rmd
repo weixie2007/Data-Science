@@ -2,9 +2,11 @@
 title: "Price Elasticity"
 author: "Wei Xie"
 date: "10/24/2018"
-output: 
+output:
+  pdf_document:
+    toc: yes
   html_document:
-    toc: true
+    toc: yes
 ---
 
 ```{r setup, include=FALSE}

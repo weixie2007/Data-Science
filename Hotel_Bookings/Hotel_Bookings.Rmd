@@ -1,0 +1,82 @@
+---
+title: "Hotel Booking Prediction"
+author: "Wei Xie"
+date: "10/24/2018"
+output: 
+  html_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(results="markdown", message=FALSE, warning=FALSE, echo = TRUE)
+```
+
+# Introduction
+
+In this report, we will follow the approach in [this blog](https://towardsdatascience.com/predicting-hotel-bookings-with-user-search-parameters-8c570ab24805) to analyze the Expedia booking data. It will be interesting to see if web booking data will be useful for actual prediction of the bookings. If so then it will be very useful for demand forecast.
+
+# Data Prepartion
+
+```{r lib}
+library(tidyverse)
+library(ggplot2)
+library(LaF)
+```
+## Background
+
+The data was provided by Expedia and is [hosted on Kaggle](https://www.kaggle.com/c/expedia-hotel-recommendations). There are also background information about this data set, discussions and submitted prediction methods.
+
+## Data Loading
+
+The training data set is a 4G+ csv file. Therefore, we would sample the data set using LaF pacakge.
+
+```{r}
+tr_top10 <- read_csv("input/train_top10.csv")
+tr_top10_nlines <- determine_nlines("input/train_top10.csv")-1 # because the first is the column name.
+```
+
+
+```{r dat-prep}
+
+set.seed(1234)
+tr_f <- "input/train.csv"
+tr_nlines <- determine_nlines(tr_f)-1 # exclude the header line
+sample_pct = 0.01
+sample_nlines <- floor(sample_pct * tr_nlines)
+
+sample_lines <- base::sample(1:tr_nlines, sort(sample_nlines), replace=T)
+
+tr <- laf_open_csv(tr_f,
+                    column_types=c("string", "integer", "integer",
+                                  "integer", "integer", "integer",
+                                  "double", "integer", "integer",
+                                  "integer", "integer", "string",
+                                  "string", "integer", "integer",
+                                  "integer", "integer", "integer",
+                                  "integer", "integer", "integer",
+                                  "integer", "integer", "integer"),
+                   column_names=c("date_time", "site_name", "posa_continent",
+                                  "user_location_country","user_location_region", "user_location_city", 
+                                  "orig_destination_distance", "user_id", "is_mobile", 
+                                  "is_package", "channel", "srch_ci", 
+                                  "srch_co", "srch_adults_cnt", "srch_children_cnt", 
+                                  "srch_rm_cnt", "srch_destination_id", "srch_destination_type_id", 
+                                  "is_booking", "cnt", "hotel_continent",
+                                  "hotel_country" ,"hotel_market", "hotel_cluster"),
+                   skip=1,
+                   ignore_failed_conversion=TRUE)
+
+tr_dat <- tr[sample_lines,]
+```
+
+
+
+# Analysis
+
+
+# Modeling
+
+
+# Conclusions
+
+
